@@ -8,6 +8,10 @@ E2Lib.RegisterExtension("entextracore", true)
 local registered_e2s_entspawn = {}
 local lastentspawned = NULL
 
+E2Lib.registerEvent("entitySpawn", {
+	{ "Entity", "e" }
+})
+
 registerCallback("destruct", function(self)
 	registered_e2s_entspawn[self.entity] = nil
 end)
@@ -21,6 +25,8 @@ hook.Add("OnEntityCreated", "wire_expression2_entextracore_onentitycreated", fun
     			entity:Execute()
     		end
     	end
+			
+		E2Lib.triggerEvent("entitySpawn", {ent})
 
     	lastentspawned = NULL
     end)
@@ -47,6 +53,10 @@ end
 local registered_e2s_entremove = {}
 local lastentremoved = NULL
 
+E2Lib.registerEvent("entityRemove", {
+	{ "Entity", "e" }
+})
+
 registerCallback("destruct", function(self)
 	registered_e2s_entremove[self.entity] = nil
 end)
@@ -59,6 +69,8 @@ hook.Add("EntityRemoved", "wire_expression2_entextracore_entityremoved", functio
 			entity:Execute()
 		end
 	end
+			
+	E2Lib.triggerEvent("entityRemove", {ent})
 
 	lastentremoved = NULL
 end)
