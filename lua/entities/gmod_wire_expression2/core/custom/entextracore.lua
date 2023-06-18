@@ -1,3 +1,33 @@
+local function isFriend(owner, player)
+    if CPPI then
+		print("owner", owner)
+		PrintTable(player:CPPIGetFriends())
+		for _, friend in pairs(player:CPPIGetFriends()) do
+			if friend == owner then
+				return true
+			end
+		end
+
+		return false
+    else
+        return E2Lib.isFriend(owner, player)
+    end
+end
+
+
+local function isOwner(chip, entity)
+    if CPPI then
+		if entity:IsPlayer() then
+			return isFriend(chip.player, entity)
+		else
+	        return chip:CPPICanTool(player, "wire_expression2")
+		end
+    else
+        return isOwner(chip, entity)
+    end
+end
+
+
 
 E2Lib.RegisterExtension("entextracore", true)
 
@@ -95,16 +125,16 @@ end
 
 __e2setcost(1)
 e2function number entity:creationID()
-	if IsValid(this) then
-		return this:GetCreationID()
-	end
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+
+	return this:GetCreationID()
 end
 
 __e2setcost(2)
 e2function array entity:children()
-	if IsValid(this) then
-		return this:GetChildren()
-	end
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	
+	return this:GetChildren()
 end
 
 --[[---------------------------------------------------------
@@ -113,10 +143,30 @@ end
 
 __e2setcost(5)
 e2function void entity:addTag(string tag)
-	if IsValid(this) and E2Lib.isOwner(self, this) then
-		this.EntityMods = this.EntityMods or {}
-		this.EntityMods.expession2_tag = this.EntityMods.expession2_tag or {}
-		local tags = this.EntityMods.expession2_tag
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+
+	this.EntityMods = this.EntityMods or {}
+	this.EntityMods.expession2_tag = this.EntityMods.expession2_tag or {}
+	local tags = this.EntityMods.expession2_tag
+
+	if not table.HasValue(tags, tag) then
+		table.insert(tags, tag)
+	end
+end
+
+__e2setcost(10)
+e2function void array:addTag(string tag)
+PrintTable(this)
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+		if not isOwner(self, ent) then return self:throw("You do not own this entity", nil) end
+	end
+
+	for _,ent in pairs(this) do
+		ent.EntityMods = ent.EntityMods or {}
+		ent.EntityMods.expession2_tag = ent.EntityMods.expession2_tag or {}
+		local tags = ent.EntityMods.expession2_tag
 
 		if not table.HasValue(tags, tag) then
 			table.insert(tags, tag)
@@ -124,50 +174,38 @@ e2function void entity:addTag(string tag)
 	end
 end
 
-__e2setcost(10)
-e2function void array:addTag(string tag)
-	for _,ent in pairs(this) do
-		if IsValid(ent) and E2Lib.isOwner(self, ent) then
-			ent.EntityMods = ent.EntityMods or {}
-			ent.EntityMods.expession2_tag = ent.EntityMods.expession2_tag or {}
-			local tags = ent.EntityMods.expession2_tag
-
-			if not table.HasValue(tags, tag) then
-				table.insert(tags, tag)
-			end
-		end
-	end
-end
-
 __e2setcost(5)
 e2function void entity:removeTag(string tag)
-	if IsValid(this) and this.EntityMods and this.EntityMods.expession2_tag then
-		if E2Lib.isOwner(self, this) then
-			local tags = this.EntityMods.expession2_tag
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	if not this.EntityMods or not this.EntityMods.expession2_tag then return end
 
-			for i,t in pairs(tags) do
-				if t == tag then
-					tags[i] = nil
-					break
-				end
-			end
+	local tags = this.EntityMods.expession2_tag
+
+	for i,t in pairs(tags) do
+		if t == tag then
+			tags[i] = nil
+			break
 		end
 	end
 end
 
 __e2setcost(10)
 e2function void array:removeTag(string tag)
-	for _,ent in pairs(this) do
-		if IsValid(ent) and ent.EntityMods and ent.EntityMods.expession2_tag then
-			if E2Lib.isOwner(self, ent) then
-				local tags = ent.EntityMods.expession2_tag
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+		if not isOwner(self, ent) then return self:throw("You do not own this entity", nil) end
+	end
 
-				for i,t in pairs(tags) do
-					if t == tag then
-						tags[i] = nil
-						break
-					end
-				end
+	for _,ent in pairs(this) do
+		if not ent.EntityMods or not ent.EntityMods.expession2_tag then continue end
+		
+		local tags = ent.EntityMods.expession2_tag
+
+		for i,t in pairs(tags) do
+			if t == tag then
+				tags[i] = nil
+				break
 			end
 		end
 	end
@@ -175,52 +213,54 @@ end
 
 __e2setcost(5)
 e2function array entity:getTags()
-	if IsValid(this) and this.EntityMods and this.EntityMods.expession2_tag then
-		return this.EntityMods.expession2_tag
-	end
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not this.EntityMods or not this.EntityMods.expession2_tag then return {} end
 
-	return {}
+	return this.EntityMods.expession2_tag
 end
 
 e2function number entity:hasTag(string tag)
-	if IsValid(this) and this.EntityMods and this.EntityMods.expession2_tag then
-		local tags = this.EntityMods.expession2_tag
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not this.EntityMods or not this.EntityMods.expession2_tag then return 0 end
+	
+	local tags = this.EntityMods.expession2_tag
 
-		if table.HasValue(tags, tag) then
-			return 1
-		end
-	end
-
-	return 0
+	return table.HasValue(tags, tag) and 1 or 0
 end
 
 __e2setcost(10)
 e2function array array:haveTag(string tag)
-	local goodents = {}
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+	end
+
+	local filterredEntities = {}
 
 	for _,ent in pairs(this) do
-		if IsValid(ent) and ent.EntityMods and ent.EntityMods.expession2_tag then
-			local tags = ent.EntityMods.expession2_tag
+		if not ent.EntityMods or not ent.EntityMods.expession2_tag then continue end
+		
+		local tags = ent.EntityMods.expession2_tag
 
-			if table.HasValue(tags, tag) then
-				table.insert(goodents, ent)
-			end
+		if table.HasValue(tags, tag) then
+			table.insert(filterredEntities, ent)
 		end
 	end
 
-	return goodents
+	return filterredEntities
 end
+
 __e2setcost(20)
 e2function array getEntitiesByTag(string tag)
 	local entities = {}
 
 	for _,ent in pairs(ents.GetAll()) do
-		if IsValid(ent) and ent.EntityMods and ent.EntityMods.expession2_tag then
-			local tags = ent.EntityMods.expession2_tag
+		if not IsValid(ent) then continue end
+		if not ent.EntityMods or not ent.EntityMods.expession2_tag then continue end
+		
+		local tags = ent.EntityMods.expession2_tag
 
-			if table.HasValue(tags, tag) then
-				table.insert(entities, ent)
-			end
+		if table.HasValue(tags, tag) then
+			table.insert(entities, ent)
 		end
 	end
 
@@ -233,95 +273,106 @@ end
 
 __e2setcost(5)
 e2function void entity:setKeyValue(string key, string value)
-	if IsValid(this) and E2Lib.isOwner(self, this) then
-		this.EntityMods = this.EntityMods or {}
-		this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
-		local keyvalues = this.EntityMods.expession2_keyvalues
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	
+	this.EntityMods = this.EntityMods or {}
+	this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
+	local keyvalues = this.EntityMods.expession2_keyvalues
 
-        keyvalues[key] = value
-	end
+	keyvalues[key] = value
 end
 
 e2function void array:setKeyValue(string key, string value)
-	for _,ent in pairs(this) do
-    	if IsValid(ent) and E2Lib.isOwner(self, ent) then
-    		ent.EntityMods = ent.EntityMods or {}
-    		ent.EntityMods.expession2_keyvalues = ent.EntityMods.expession2_keyvalues or {}
-    		local keyvalues = ent.EntityMods.expession2_keyvalues
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+		if not isOwner(self, ent) then return self:throw("You do not own this entity", nil) end
+	end
 
-            keyvalues[key] = value
-    	end
+	for _,ent in pairs(this) do
+		ent.EntityMods = ent.EntityMods or {}
+		ent.EntityMods.expession2_keyvalues = ent.EntityMods.expession2_keyvalues or {}
+		local keyvalues = ent.EntityMods.expession2_keyvalues
+
+		keyvalues[key] = value
     end
 end
 
 e2function void entity:removeKeyValue(string key)
-	if IsValid(this) and E2Lib.isOwner(self, this) then
-		this.EntityMods = this.EntityMods or {}
-		this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
-		local keyvalues = this.EntityMods.expession2_keyvalues
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	
+	this.EntityMods = this.EntityMods or {}
+	this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
+	local keyvalues = this.EntityMods.expession2_keyvalues
 
-        keyvalues[key] = nil
-	end
+	keyvalues[key] = nil
 end
 
 e2function void array:removeKeyValue(string key)
-	for _,ent in pairs(this) do
-    	if IsValid(ent) and E2Lib.isOwner(self, ent) then
-    		ent.EntityMods = ent.EntityMods or {}
-    		ent.EntityMods.expession2_keyvalues = ent.EntityMods.expession2_keyvalues or {}
-    		local keyvalues = ent.EntityMods.expession2_keyvalues
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+		if not isOwner(self, ent) then return self:throw("You do not own this entity", nil) end
+	end
 
-            keyvalues[key] = nil
-    	end
-    end
+	for _,ent in pairs(this) do
+		ent.EntityMods = ent.EntityMods or {}
+		ent.EntityMods.expession2_keyvalues = ent.EntityMods.expession2_keyvalues or {}
+		local keyvalues = ent.EntityMods.expession2_keyvalues
+
+		keyvalues[key] = nil
+	end
 end
 
 e2function string entity:getKeyValue(string key)
-    if IsValid(this) and E2Lib.isOwner(self, this) then
-        this.EntityMods = this.EntityMods or {}
-        this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
-        local keyvalues = this.EntityMods.expession2_keyvalues
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	
+	this.EntityMods = this.EntityMods or {}
+	this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
+	local keyvalues = this.EntityMods.expession2_keyvalues
 
-        print(keyvalues[key])
-        return keyvalues[key] or ""
-    end
-
-    return ""
+	return keyvalues[key] or ""
 end
 
 local DEFAULT_TABLE = {n={},ntypes={},s={},stypes={},size=0}
 
 e2function table entity:getKeyValues()
-    if IsValid(this) and E2Lib.isOwner(self, this) then
-        this.EntityMods = this.EntityMods or {}
-        this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	
+	this.EntityMods = this.EntityMods or {}
+	this.EntityMods.expession2_keyvalues = this.EntityMods.expession2_keyvalues or {}
 
-		local ret = table.Copy(DEFAULT_TABLE)
-		local size = 0
-		for k,v in pairs(this.EntityMods.expession2_keyvalues) do
-			if isstring(v) then
-				ret.s[k] = v
-				ret.stypes[k] = "s"
-				size = size + 1
-			end
+	local ret = table.Copy(DEFAULT_TABLE)
+	local size = 0
+	for k,v in pairs(this.EntityMods.expession2_keyvalues) do
+		if isstring(v) then
+			ret.s[k] = v
+			ret.stypes[k] = "s"
+			size = size + 1
 		end
+	end
 
-		ret.size = size
-		return ret
-    end
+	ret.size = size
+	return ret
 end
 
 __e2setcost(20)
 e2function array getEntitiesByKeyValue(string key, string value)
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+	end
+
 	local entities = {}
 
 	for _,ent in pairs(ents.GetAll()) do
-		if IsValid(ent) and ent.EntityMods and ent.EntityMods.expession2_keyvalues then
-			local keyvalues = ent.EntityMods.expession2_keyvalues
+		if not ent.EntityMods or not ent.EntityMods.expession2_keyvalues then continue end
+		
+		local keyvalues = ent.EntityMods.expession2_keyvalues
 
-			if keyvalues[key] and keyvalues[key] == value then
-				table.insert(entities, ent)
-			end
+		if keyvalues[key] and keyvalues[key] == value then
+			table.insert(entities, ent)
 		end
 	end
 
@@ -330,19 +381,23 @@ end
 
 __e2setcost(10)
 e2function array array:haveKeyValue(string key, string value)
-	local goodents = {}
+	for _, ent in pairs(this) do
+		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
+	end
+
+	local filterredEntities = {}
 
 	for _,ent in pairs(this) do
-		if IsValid(ent) and ent.EntityMods and ent.EntityMods.expession2_tag then
-			local keyvalues = this.EntityMods.expession2_keyvalues
+		if not ent.EntityMods or not ent.EntityMods.expession2_keyvalues then continue end
+	
+		local keyvalues = this.EntityMods.expession2_keyvalues
 
-			if keyvalues[key] and keyvalues[key] == value then
-				table.insert(goodents, ent)
-			end
+		if keyvalues[key] and keyvalues[key] == value then
+			table.insert(filterredEntities, ent)
 		end
 	end
 
-	return goodents
+	return filterredEntities
 end
 
 --[[---------------------------------------------------------
@@ -360,7 +415,7 @@ local function UpdateHalo(ent)
 	net.Broadcast()
 end
 
-local function SetHalo(ent, color, blurX, blurY, add, ingore)
+local function SetHalo(ent, color, blurX, blurY, add, ignore)
     ent.EntityMods = ent.EntityMods or {}
     ent.EntityMods.expession2_halo = {
         Color = color,
@@ -400,41 +455,46 @@ hook.Add("OnEntityCreated", "wire_expression2_entextracore_halo_update", functio
     end)
 end)
 
-e2function void entity:setHalo(vector c, number blurX, number blurY, add, ingore)
-    if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
-    local color = Color(c[1], c[2], c[3])
+e2function void entity:setHalo(vector color, number blurX, number blurY, add, ignore)
+	if not IsValid(this) then return self:throw("Invalid entity", this) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", this) end
 
-    SetHalo(this, color, blurX, blurY, add~=0, ingore~=0)
+    local color = Color(color[1], color[2], color[3])
+
+    SetHalo(this, color, blurX, blurY, add~=0, ignore~=0)
 end
 
-e2function void entity:setHalo(vector c, number blurX, number blurY, add)
-    if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
-    local color = Color(c[1], c[2], c[3])
+e2function void entity:setHalo(vector color, number blurX, number blurY, add)
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+
+    local color = Color(color[1], color[2], color[3])
 
     SetHalo(this, color, blurX, blurY, add~=0, false)
 end
 
-e2function void entity:setHalo(vector c, number blurX, number blurY)
-    if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
-    local color = Color(c[1], c[2], c[3])
+e2function void entity:setHalo(vector color, number blurX, number blurY)
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+
+    local color = Color(color[1], color[2], color[3])
 
     SetHalo(this, color, blurX, blurY, true, false)
 end
 
-e2function void entity:setHalo(vector c)
-    if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
-    local color = Color(c[1], c[2], c[3])
+e2function void entity:setHalo(vector color)
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+
+    local color = Color(color[1], color[2], color[3])
 
     SetHalo(this, color, 5, 5, true, false)
 end
 
 e2function void entity:removeHalo()
-    if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	
     if not this.EntityMods or not this.EntityMods.expession2_halo then return end
 
     this.EntityMods.expession2_halo = nil
@@ -460,7 +520,7 @@ end
 
 e2function void entity:setWorldTip(string text)
     if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
+	if not isOwner(self, this) then return end
 	if #text == 0 then return end
 
     this.EntityMods = this.EntityMods or {}
@@ -471,7 +531,7 @@ end
 
 e2function void entity:removeWorldTip()
     if not IsValid(this) then return end
-	if not E2Lib.isOwner(self, this) then return end
+	if not isOwner(self, this) then return end
 	if not this.EntityMods or not this.EntityMods.expession2_worldtip then return end
 
     this.EntityMods = this.EntityMods or {}
