@@ -1,7 +1,5 @@
 local function isFriend(owner, player)
     if CPPI then
-		print("owner", owner)
-		PrintTable(player:CPPIGetFriends())
 		for _, friend in pairs(player:CPPIGetFriends()) do
 			if friend == owner then
 				return true
@@ -157,7 +155,6 @@ end
 
 __e2setcost(10)
 e2function void array:addTag(string tag)
-PrintTable(this)
 	for _, ent in pairs(this) do
 		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
 		if not isOwner(self, ent) then return self:throw("You do not own this entity", nil) end
