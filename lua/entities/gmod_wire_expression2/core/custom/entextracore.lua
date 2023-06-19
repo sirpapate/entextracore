@@ -1,4 +1,8 @@
 local function isFriend(owner, player)
+	if owner == player then
+		return true
+	end
+
     if CPPI then
 		for _, friend in pairs(player:CPPIGetFriends()) do
 			if friend == owner then
@@ -13,18 +17,17 @@ local function isFriend(owner, player)
 end
 
 
-local function isOwner(chip, entity)
+local function isOwner(chip, entity, canTargetPlayers)
     if CPPI then
-		if entity:IsPlayer() then
+		if entity:IsPlayer() and canTargetPlayers then
 			return isFriend(chip.player, entity)
 		else
-	        return chip:CPPICanTool(player, "wire_expression2")
+	        return entity:CPPICanTool(chip.player, "wire_expression2")
 		end
     else
-        return isOwner(chip, entity)
+        return E2Lib.isOwner(chip, entity)
     end
 end
-
 
 
 E2Lib.RegisterExtension("entextracore", true)
@@ -454,7 +457,7 @@ end)
 
 e2function void entity:setHalo(vector color, number blurX, number blurY, add, ignore)
 	if not IsValid(this) then return self:throw("Invalid entity", this) end
-	if not isOwner(self, this) then return self:throw("You do not own this entity", this) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", this) end
 
     local color = Color(color[1], color[2], color[3])
 
@@ -463,7 +466,7 @@ end
 
 e2function void entity:setHalo(vector color, number blurX, number blurY, add)
 	if not IsValid(this) then return self:throw("Invalid entity", nil) end
-	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", nil) end
 
     local color = Color(color[1], color[2], color[3])
 
@@ -472,7 +475,7 @@ end
 
 e2function void entity:setHalo(vector color, number blurX, number blurY)
 	if not IsValid(this) then return self:throw("Invalid entity", nil) end
-	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", nil) end
 
     local color = Color(color[1], color[2], color[3])
 
@@ -481,7 +484,7 @@ end
 
 e2function void entity:setHalo(vector color)
 	if not IsValid(this) then return self:throw("Invalid entity", nil) end
-	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", nil) end
 
     local color = Color(color[1], color[2], color[3])
 
@@ -490,7 +493,7 @@ end
 
 e2function void entity:removeHalo()
 	if not IsValid(this) then return self:throw("Invalid entity", nil) end
-	if not isOwner(self, this) then return self:throw("You do not own this entity", nil) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", nil) end
 	
     if not this.EntityMods or not this.EntityMods.expession2_halo then return end
 
@@ -516,8 +519,8 @@ local function UpdateWorldTip(ent)
 end
 
 e2function void entity:setWorldTip(string text)
-    if not IsValid(this) then return end
-	if not isOwner(self, this) then return end
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", nil) end
 	if #text == 0 then return end
 
     this.EntityMods = this.EntityMods or {}
@@ -527,8 +530,8 @@ e2function void entity:setWorldTip(string text)
 end
 
 e2function void entity:removeWorldTip()
-    if not IsValid(this) then return end
-	if not isOwner(self, this) then return end
+	if not IsValid(this) then return self:throw("Invalid entity", nil) end
+	if not isOwner(self, this, true) then return self:throw("You do not own this entity", nil) end
 	if not this.EntityMods or not this.EntityMods.expession2_worldtip then return end
 
     this.EntityMods = this.EntityMods or {}
