@@ -110,7 +110,11 @@ hook.Add("Think", "wire_expression2_entextracore_worldtip_draw", function()
 
     if IsValid(ent) and entsworldtip[ent] then
         if tr.StartPos:Distance(tr.HitPos) <= 256 then
-            AddWorldTip(ent:EntIndex(), entsworldtip[ent], 0.5, ent:GetPos(), ent)
+            if ent:IsPlayer() then
+                AddWorldTip(ent:EntIndex(), entsworldtip[ent], 0.5, ent:EyePos())
+            else
+                AddWorldTip(ent:EntIndex(), entsworldtip[ent], 0.5, ent:GetPos())
+            end
 
     		halo.Add({ent}, Color(255, 255, 255, 255), 1, 1, 1, true, true)
         end
