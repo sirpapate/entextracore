@@ -41,7 +41,7 @@ local lastentspawned = NULL
 
 E2Lib.registerEvent("entitySpawn", {
 	{ "Entity", "e" }
-})
+}, nil, nil, "Deprecated: use the entityCreated event instead")
 
 registerCallback("destruct", function(self)
 	registered_e2s_entspawn[self.entity] = nil
@@ -66,6 +66,7 @@ hook.Add("OnEntityCreated", "wire_expression2_entextracore_onentitycreated", fun
 end)
 
 __e2setcost(1)
+[deprecated = "Use the entityCreated event instead"]
 e2function void runOnEntitySpawn(activate)
 	if activate ~= 0 then
 		registered_e2s_entspawn[self.entity] = true
@@ -75,6 +76,7 @@ e2function void runOnEntitySpawn(activate)
 end
 
 __e2setcost(2)
+[deprecated = "Use the entityCreated event instead"]
 e2function entity entitySpawnClk()
 	return lastentspawned
 end
@@ -88,7 +90,7 @@ local lastentremoved = NULL
 
 E2Lib.registerEvent("entityRemove", {
 	{ "Entity", "e" }
-})
+}, nil, nil, "Deprecated: use the entityRemoved event instead")
 
 registerCallback("destruct", function(self)
 	registered_e2s_entremove[self.entity] = nil
@@ -109,6 +111,7 @@ hook.Add("EntityRemoved", "wire_expression2_entextracore_entityremoved", functio
 end)
 
 __e2setcost(1)
+[deprecated = "Use the entityRemoved event instead"]
 e2function void runOnEntityRemove(activate)
 	if activate ~= 0 then
 		registered_e2s_entremove[self.entity] = true
@@ -118,6 +121,7 @@ e2function void runOnEntityRemove(activate)
 end
 
 __e2setcost(2)
+[deprecated = "Use the entityRemoved event instead"]
 e2function entity entityRemoveClk()
 	return lastentremoved
 end
