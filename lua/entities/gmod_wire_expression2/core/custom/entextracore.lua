@@ -360,10 +360,6 @@ end
 
 __e2setcost(20)
 e2function array getEntitiesByKeyValue(string key, string value)
-	for _, ent in pairs(this) do
-		if not IsValid(ent) then return self:throw("Invalid entity", nil) end
-	end
-
 	local entities = {}
 
 	for _,ent in pairs(ents.GetAll()) do
