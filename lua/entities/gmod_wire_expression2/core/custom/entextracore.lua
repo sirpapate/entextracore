@@ -434,7 +434,7 @@ hook.Add("PlayerInitialSpawn", "wire_expression2_entextracore_halo_sync", functi
     end
 
     net.Start("wire_expression2_entextracore_halo_sync")
-        net.WriteInt(#info, 32)
+        net.WriteInt(table.Count(info), 32)
 
         for ent, halo in pairs(info) do
             net.WriteEntity(ent)
@@ -546,7 +546,7 @@ hook.Add("PlayerInitialSpawn", "wire_expression2_entextracore_worldtip_sync", fu
     end
 
     net.Start("wire_expression2_entextracore_worldtip_sync")
-        net.WriteInt(#info, 32)
+        net.WriteInt(table.Count(info), 32)
 
         for ent, text in pairs(info) do
             net.WriteEntity(ent)
