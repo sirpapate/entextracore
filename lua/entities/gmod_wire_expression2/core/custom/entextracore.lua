@@ -49,6 +49,8 @@ end)
 
 hook.Add("OnEntityCreated", "wire_expression2_entextracore_onentitycreated", function(ent)
     timer.Simple(0, function()
+		if not IsValid(ent) then return end
+
     	lastentspawned = ent
 
     	for entity,_ in pairs(registered_e2s_entspawn) do
@@ -405,6 +407,9 @@ util.AddNetworkString("wire_expression2_entextracore_halo_update")
 util.AddNetworkString("wire_expression2_entextracore_halo_remove")
 
 local function UpdateHalo(ent)
+	if not IsValid(ent) then return end
+	if not ent.EntityMods or not ent.EntityMods.expession2_halo then return end
+
 	net.Start("wire_expression2_entextracore_halo_update")
 		net.WriteEntity(ent)
 		net.WriteString(util.TableToJSON(ent.EntityMods.expession2_halo))
@@ -445,6 +450,8 @@ end)
 
 hook.Add("OnEntityCreated", "wire_expression2_entextracore_halo_update", function(ent)
     timer.Simple(0, function()
+		if not IsValid(ent) then return end
+
         if ent.EntityMods and ent.EntityMods.expession2_halo then
             UpdateHalo(ent)
         end
@@ -508,6 +515,9 @@ util.AddNetworkString("wire_expression2_entextracore_worldtip_sync")
 util.AddNetworkString("wire_expression2_entextracore_worldtip_update")
 
 local function UpdateWorldTip(ent)
+	if not IsValid(ent) then return end
+	if not ent.EntityMods or not ent.EntityMods.expession2_worldtip then return end
+
 	net.Start("wire_expression2_entextracore_worldtip_update")
 		net.WriteEntity(ent)
 		net.WriteString(ent.EntityMods.expession2_worldtip or "")
@@ -557,6 +567,8 @@ end)
 
 hook.Add("OnEntityCreated", "wire_expression2_entextracore_worldtip_update", function(ent)
     timer.Simple(0, function()
+		if not IsValid(ent) then return end
+
         if ent.EntityMods and ent.EntityMods.expession2_worldtip then
             UpdateWorldTip(ent)
         end
