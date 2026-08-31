@@ -495,7 +495,7 @@ e2function void entity:removeHalo()
 
     this.EntityMods.expession2_halo = nil
 
-    net.Start("wire_expression2_entextracore_remove")
+    net.Start("wire_expression2_entextracore_halo_remove")
         net.WriteEntity(this)
     net.Broadcast()
 end
