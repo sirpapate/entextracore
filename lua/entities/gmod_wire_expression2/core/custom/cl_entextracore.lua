@@ -96,10 +96,14 @@ net.Receive("wire_expression2_entextracore_worldtip_sync", function()
 
     for i = 1, count do
         local ent = net.ReadEntity()
-        local halo = util.JSONToTable(net.ReadString())
+        local text = net.ReadString()
 
         if IsValid(ent) then
-            entsworldtip[ent] = halo
+            if text ~= "" then
+                entsworldtip[ent] = text
+            else
+                entsworldtip[ent] = nil
+            end
         end
     end
 end)
