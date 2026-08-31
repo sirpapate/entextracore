@@ -390,7 +390,7 @@ e2function array array:haveKeyValue(string key, string value)
 	for _,ent in pairs(this) do
 		if not ent.EntityMods or not ent.EntityMods.expession2_keyvalues then continue end
 	
-		local keyvalues = this.EntityMods.expession2_keyvalues
+		local keyvalues = ent.EntityMods.expession2_keyvalues
 
 		if keyvalues[key] and keyvalues[key] == value then
 			table.insert(filterredEntities, ent)
