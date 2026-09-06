@@ -1,0 +1,124 @@
+@name EntextraCore WorldTip Tests
+@trigger none
+@strict
+
+#include "libs/jest"
+
+#ifdef entity:setWorldTip(string)
+#ifdef propSpawn(string, vector, angle, number)
+
+function entity spawnBarrel() {
+    return propSpawn("models/props_c17/oildrum001.mdl", entity():pos() + vec(0, 0, 48), ang(), 1)
+}
+
+describe("world tip", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    afterAll(function() {
+        entity():removeWorldTip()
+    })
+
+    it("sets and removes a world tip", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        expect(Ent):toBeValid()
+
+        Ent:setWorldTip("EntextraCore world tip")
+        Ent:setWorldTip("Updated world tip")
+        Ent:removeWorldTip()
+
+        expect(Ent):toBeValid()
+        Ent:propDelete()
+    })
+
+    it("treats empty text and extra remove as no-ops", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        Ent:setWorldTip("")
+        Ent:removeWorldTip()
+        Ent:setWorldTip("visible")
+        Ent:removeWorldTip()
+        Ent:removeWorldTip()
+
+        expect(Ent):toBeValid()
+        Ent:propDelete()
+    })
+
+    it("truncates an over-long world tip instead of throwing", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Long = ""
+        for (_ = 1, 300) {
+            Long = Long + "w"
+        }
+
+        local Ent = spawnBarrel()
+        Ent:setWorldTip(Long)
+        Ent:removeWorldTip()
+
+        expect(Ent):toBeValid()
+        Ent:propDelete()
+    })
+
+    it("applies and removes a world tip on the chip", function() {
+        entity():setWorldTip("Look at this chip")
+        entity():removeWorldTip()
+        expect(entity()):toBeValid()
+    })
+
+    it("throws on an invalid entity", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Dead = spawnBarrel()
+        Dead:propDelete()
+
+        timer(0.1, function() {
+            expect(function() {
+                Dead:setWorldTip("x")
+            }, "set world tip on invalid entity"):toThrow("Invalid entity")
+
+            expect(function() {
+                Dead:removeWorldTip()
+            }, "remove world tip on invalid entity"):toThrow("Invalid entity")
+
+            Done()
+        })
+    })
+})
+
+if (first()) {
+    jestTimeout(2)
+    jestRun()
+}
+
+event removed(Resetting:number) {
+    entity():removeWorldTip()
+}
+
+#else
+if (first()) {
+    print("Propcore is not installed")
+}
+#endif
+#else
+if (first()) {
+    print("EntextraCore is not installed")
+}
+#endif

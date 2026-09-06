@@ -1,0 +1,102 @@
+@name EntextraCore Halo Tests
+@trigger none
+@strict
+
+#include "libs/jest"
+
+#ifdef entity:setHalo(vector)
+#ifdef propSpawn(string, vector, angle, number)
+
+function entity spawnBarrel() {
+    return propSpawn("models/props_c17/oildrum001.mdl", entity():pos() + vec(0, 0, 48), ang(), 1)
+}
+
+describe("halo", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    afterAll(function() {
+        entity():removeHalo()
+    })
+
+    it("applies every setHalo overload then removes it", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        expect(Ent):toBeValid()
+
+        Ent:setHalo(vec(255, 0, 0))
+        Ent:setHalo(vec(0, 255, 0), 2, 2)
+        Ent:setHalo(vec(0, 0, 255), 3, 3, 1)
+        Ent:setHalo(vec(255, 255, 0), 4, 4, 1, 1)
+        Ent:removeHalo()
+
+        expect(Ent):toBeValid()
+        Ent:propDelete()
+    })
+
+    it("can remove a halo before set and after remove", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        Ent:removeHalo()
+        Ent:setHalo(vec(80, 180, 255), 5, 5, 1, 0)
+        Ent:removeHalo()
+        Ent:removeHalo()
+
+        expect(Ent):toBeValid()
+        Ent:propDelete()
+    })
+
+    it("applies and removes a halo on the chip", function() {
+        entity():setHalo(vec(255, 128, 0))
+        entity():removeHalo()
+        expect(entity()):toBeValid()
+    })
+
+    it("throws on an invalid entity", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Dead = spawnBarrel()
+        Dead:propDelete()
+
+        expect(function() {
+            Dead:setHalo(vec(255, 0, 0))
+        }):toThrow("Invalid entity")
+
+        expect(function() {
+            Dead:removeHalo()
+        }):toThrow("Invalid entity")
+    })
+})
+
+if (first()) {
+    jestTimeout(2)
+    jestRun()
+}
+
+event removed(Resetting:number) {
+    entity():removeHalo()
+}
+
+#else
+if (first()) {
+    print("Propcore is not installed")
+}
+#endif
+#else
+if (first()) {
+    print("EntextraCore is not installed")
+}
+#endif

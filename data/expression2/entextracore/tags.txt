@@ -1,0 +1,222 @@
+@name EntextraCore Tag Tests
+@trigger none
+@strict
+
+#include "libs/jest"
+
+#ifdef entity:addTag(string)
+#ifdef propSpawn(string, vector, angle, number)
+
+function entity spawnBarrel() {
+    return propSpawn("models/props_c17/oildrum001.mdl", entity():pos() + vec(0, 0, 48), ang(), 1)
+}
+
+function string uniqueTag(Label:string) {
+    return "eect_" + entity():id() + "_" + entity():creationID() + "_" + Label
+}
+
+describe("entity tags", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    it("adds, reads, and removes a tag", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        local Tag = uniqueTag("single")
+
+        expect(Ent:hasTag(Tag)):toBeFalsy()
+        expect(Ent:getTags()):toHaveLength(0)
+
+        Ent:addTag(Tag)
+        expect(Ent:hasTag(Tag)):toBeTruthy()
+        expect(Ent:getTags()):toHaveLength(1)
+        expect(Ent:getTags()):toContain(Tag)
+
+        Ent:addTag(Tag)
+        expect(Ent:getTags()):toHaveLength(1)
+
+        Ent:addTag(uniqueTag("second"))
+        expect(Ent:getTags()):toHaveLength(2)
+
+        Ent:removeTag(Tag)
+        expect(Ent:hasTag(Tag)):toBeFalsy()
+        expect(Ent:getTags()):toHaveLength(1)
+
+        Ent:removeTag("missing")
+        expect(Ent:getTags()):toHaveLength(1)
+
+        Ent:propDelete()
+    })
+
+    it("filters the world list with getEntitiesByTag", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        local Tag = uniqueTag("world")
+
+        Ent:addTag(Tag)
+        expect(getEntitiesByTag(Tag)):toContain(Ent)
+
+        Ent:removeTag(Tag)
+        expect(getEntitiesByTag(Tag)):not():toContain(Ent)
+
+        Ent:propDelete()
+    })
+})
+
+describe("array tags", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    it("adds, filters, and removes tags on an array", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local First = spawnBarrel()
+        local Second = spawnBarrel()
+        local Tag = uniqueTag("array")
+        local Ents = array(First, Second)
+
+        Ents:addTag(Tag)
+        expect(First:hasTag(Tag)):toBeTruthy()
+        expect(Second:hasTag(Tag)):toBeTruthy()
+
+        local Found = Ents:haveTag(Tag)
+        expect(Found):toHaveLength(2)
+        expect(Found):toContain(First)
+        expect(Found):toContain(Second)
+
+        First:removeTag(Tag)
+        Found = Ents:haveTag(Tag)
+        expect(Found):toHaveLength(1)
+        expect(Found[1, entity]):toBe(Second)
+
+        Ents:removeTag(Tag)
+        expect(Second:hasTag(Tag)):toBeFalsy()
+        expect(Ents:haveTag(Tag)):toHaveLength(0)
+
+        First:propDelete()
+        Second:propDelete()
+    })
+
+    it("skips untagged and invalid entities", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Tagged = spawnBarrel()
+        local Untagged = spawnBarrel()
+        local Dead = spawnBarrel()
+        local Tag = uniqueTag("mixed")
+
+        Tagged:addTag(Tag)
+        Dead:addTag(Tag)
+        Dead:propDelete()
+
+        timer(0.1, function() {
+            local Found = array(Tagged, Untagged, Dead):haveTag(Tag)
+            expect(Found):toHaveLength(1)
+            expect(Found[1, entity]):toBe(Tagged)
+
+            Tagged:propDelete()
+            Untagged:propDelete()
+
+            Done()
+        })
+    })
+})
+
+describe("tag limits", function() {
+    it("rejects a tag that is too long", function() {
+        local Long = ""
+        for (_ = 1, 65) {
+            Long = Long + "x"
+        }
+
+        expect(function() {
+            entity():addTag(Long)
+        }):toThrow("Tag is too long")
+    })
+
+    it("enforces the per-entity tag count", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Ent = spawnBarrel()
+        local Prefix = uniqueTag("limit")
+
+        for (I = 1, 32) {
+            Ent:addTag(Prefix + "_" + I)
+        }
+
+        expect(function() {
+            Ent:addTag(Prefix + "_33")
+        }):toThrow("Entity has too many tags")
+
+        Ent:propDelete()
+    })
+})
+
+describe("invalid tag targets", function() {
+    it("throws on an invalid entity", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Dead = spawnBarrel()
+        Dead:propDelete()
+
+        timer(0.1, function() {
+            expect(function() {
+                Dead:addTag("x")
+            }, "add tag on invalid entity"):toThrow("Invalid entity")
+
+            expect(function() {
+                Dead:removeTag("x")
+            }, "remove tag on invalid entity"):toThrow("Invalid entity")
+
+            expect(function() {
+                Dead:getTags()
+            }, "get tags on invalid entity"):toThrow("Invalid entity")
+
+            expect(function() {
+                Dead:hasTag("x")
+            }, "has tag on invalid entity"):toThrow("Invalid entity")
+
+            Done()
+        })
+    })
+})
+
+if (first()) {
+    jestTimeout(2)
+    jestRun()
+}
+
+#else
+if (first()) {
+    print("Propcore is not installed")
+}
+#endif
+#else
+if (first()) {
+    print("EntextraCore is not installed")
+}
+#endif
