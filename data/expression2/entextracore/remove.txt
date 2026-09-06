@@ -1,0 +1,125 @@
+@name EntextraCore Remove Tests
+@persist Expected:entity Phase:string RemoveClkFired ClkDone:function EventDone:function
+@trigger none
+@strict
+
+#include "libs/jest"
+
+#ifdef runOnEntityRemove(number)
+#ifdef propSpawn(string, vector, angle, number)
+
+function entity spawnBarrel() {
+    return propSpawn("models/props_c17/oildrum001.mdl", entity():pos() + vec(0, 0, 48), ang(), 1)
+}
+
+describe("entity remove", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    afterEach(function() {
+        runOnEntityRemove(0)
+        Phase = ""
+        let E = Expected
+        timer(0, function() {
+            if (E:isValid()) {
+                E:propDelete()
+            }
+        })
+    })
+
+    it("runOnEntityRemove and entityRemoveClk", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            Done()
+            return
+        }
+
+        Phase = "clk"
+        ClkDone = Done
+        runOnEntityRemove(1)
+        Expected = spawnBarrel()
+        expect(Expected):toBeValid()
+
+        timer(0, function() {
+            Expected:propDelete()
+        })
+    })
+
+    it("runOnEntityRemove(0) stops the clock", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            Done()
+            return
+        }
+
+        RemoveClkFired = 0
+        Phase = "disable"
+        runOnEntityRemove(1)
+        runOnEntityRemove(0)
+        Expected = spawnBarrel()
+        expect(Expected):toBeValid()
+
+        timer(0, function() {
+            if (Expected:isValid()) {
+                Expected:propDelete()
+            }
+        })
+
+        timer(0.25, function() {
+            expect(RemoveClkFired):toBe(0)
+            expect(entityRemoveClk()):toBeNull()
+            Done()
+        })
+    })
+
+    it("event entityRemove", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            Done()
+            return
+        }
+
+        Phase = "event"
+        EventDone = Done
+        Expected = spawnBarrel()
+        expect(Expected):toBeValid()
+
+        timer(0, function() {
+            Expected:propDelete()
+        })
+    })
+})
+
+if (first()) {
+    jestTimeout(2)
+    jestRun()
+}
+elseif (entityRemoveClk()) {
+    RemoveClkFired = 1
+
+    if (Phase == "clk") {
+        expect(entityRemoveClk()):toBe(Expected)
+        runOnEntityRemove(0)
+        ClkDone()
+    }
+}
+
+event entityRemove(Ent:entity) {
+    if (Phase == "event" & Ent == Expected) {
+        expect(Ent):toBe(Expected)
+        EventDone()
+    }
+}
+
+#else
+if (first()) {
+    print("Propcore is not installed")
+}
+#endif
+#else
+if (first()) {
+    print("EntextraCore is not installed")
+}
+#endif

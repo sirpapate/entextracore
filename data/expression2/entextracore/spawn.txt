@@ -1,0 +1,111 @@
+@name EntextraCore Spawn Tests
+@persist Expected:entity Phase:string ClkDone:function EventDone:function
+@trigger none
+@strict
+
+#include "libs/jest"
+
+#ifdef runOnEntitySpawn(number)
+#ifdef propSpawn(string, vector, angle, number)
+
+function entity spawnBarrel() {
+    return propSpawn("models/props_c17/oildrum001.mdl", entity():pos() + vec(0, 0, 48), ang(), 1)
+}
+
+describe("entity spawn", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    afterEach(function() {
+        runOnEntitySpawn(0)
+        Phase = ""
+        if (Expected:isValid()) {
+            Expected:propDelete()
+        }
+    })
+
+    it("runOnEntitySpawn and entitySpawnClk", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            Done()
+            return
+        }
+
+        Phase = "clk"
+        ClkDone = Done
+        runOnEntitySpawn(1)
+        Expected = spawnBarrel()
+        expect(Expected):toBeValid()
+    })
+
+    it("runOnEntitySpawn(0) stops the clock", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            Done()
+            return
+        }
+
+        Phase = "disable"
+        runOnEntitySpawn(1)
+        runOnEntitySpawn(0)
+        Expected = spawnBarrel()
+        expect(Expected):toBeValid()
+
+        timer(0.25, function() {
+            expect(entitySpawnClk()):toBeNull()
+            Done()
+        })
+    })
+
+    it("event entitySpawn", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            Done()
+            return
+        }
+
+        Phase = "event"
+        EventDone = Done
+        Expected = spawnBarrel()
+        expect(Expected):toBeValid()
+    })
+})
+
+if (first()) {
+    jestTimeout(2)
+    jestRun()
+}
+elseif (entitySpawnClk()) {
+    if (Phase == "clk") {
+        expect(entitySpawnClk()):toBe(Expected)
+        runOnEntitySpawn(0)
+        ClkDone()
+    }
+}
+
+event entitySpawn(Ent:entity) {
+    if (Phase == "event" & Ent == Expected) {
+        expect(Ent):toBeValid()
+        expect(Ent):toBe(Expected)
+        EventDone()
+    }
+}
+
+event removed(Resetting:number) {
+    if (Expected:isValid()) {
+        Expected:propDelete()
+    }
+}
+
+#else
+if (first()) {
+    print("Propcore is not installed")
+}
+#endif
+#else
+if (first()) {
+    print("EntextraCore is not installed")
+}
+#endif
