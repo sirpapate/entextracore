@@ -1,0 +1,123 @@
+@name EntextraCore Info Tests
+@trigger none
+@strict
+
+#include "libs/jest"
+
+#ifdef entity:creationID()
+#ifdef propSpawn(string, vector, angle, number)
+
+function entity spawnBarrel() {
+    return propSpawn("models/props_c17/oildrum001.mdl", entity():pos() + vec(0, 0, 48), ang(), 1)
+}
+
+describe("creationID", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    it("returns a positive id on the chip", function() {
+        expect(entity():creationID()):toBeGreaterThan(0)
+    })
+
+    it("increases across spawned props", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local First = spawnBarrel()
+        local Second = spawnBarrel()
+
+        expect(First):toBeValid()
+        expect(Second):toBeValid()
+        expect(First:creationID()):toBeGreaterThan(0)
+        expect(Second:creationID()):toBeGreaterThan(First:creationID())
+
+        First:propDelete()
+        Second:propDelete()
+    })
+
+    it("throws on an invalid entity", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Dead = spawnBarrel()
+        Dead:propDelete()
+
+        timer(0.01, function() {
+            expect(function() {
+                Dead:creationID()
+            }):toThrow("Invalid entity")
+
+            Done()
+        })
+    })
+})
+
+describe("children", function() {
+    beforeAll(function() {
+        propSpawnUndo(0)
+        propSpawnEffect(0)
+    })
+
+    it("returns parented entities", function() {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Parent = spawnBarrel()
+        local Child = spawnBarrel()
+
+        expect(Parent):toBeValid()
+        expect(Child):toBeValid()
+
+        Child:parentTo(Parent)
+        expect(Parent:children()):toContain(Child)
+
+        Child:propDelete()
+        Parent:propDelete()
+    })
+
+    it("does not include the entity itself", function() {
+        expect(entity():children()):not():toContain(entity())
+    })
+
+    it("throws on an invalid entity", function(Done:function) {
+        if (!propCanCreate()) {
+            fail("propCanCreate is 0")
+            return
+        }
+
+        local Dead = spawnBarrel()
+        Dead:propDelete()
+
+        timer(0.01, function() {
+            expect(function() {
+                Dead:children()
+            }):toThrow("Invalid entity")
+
+            Done()
+        })
+    })
+})
+
+if (first()) {
+    jestTimeout(2)
+    jestRun()
+}
+
+#else
+if (first()) {
+    print("Propcore is not installed")
+}
+#endif
+#else
+if (first()) {
+    print("EntextraCore is not installed")
+}
+#endif
